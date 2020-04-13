@@ -1,12 +1,10 @@
 from wiki_dump_reader import Cleaner, iterate
 from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
 import re
 from collections import Counter
 from scipy.sparse import csc_matrix, csr_matrix, save_npz, load_npz
 from scipy.sparse.linalg import norm
-from sklearn.preprocessing import normalize
 import numpy as np
 import pickle
 
@@ -47,15 +45,13 @@ class Search:
         nw_vector = [0]*len(self.bag_of_words)
         for (f, file) in enumerate(self.file_dictionaries):
             for (w, word) in enumerate(self.bag_of_words):
-                files.append(f)
-                words.append(w)
                 if word in file.keys():
+                    files.append(f)
+                    words.append(w)
                     values.append(file[word])
                     nw_vector[w]+=1
-                else:
-                    values.append(0)
 
-        self.term_by_document = csc_matrix((values, (words, files))) #?
+        self.term_by_document = csc_matrix((values, (words, files)))
         nw_vector = np.array(nw_vector)
         idf = np.log(np.array([self.files_number]*len(self.bag_of_words))/nw_vector)
         idf_sparse_matrix = csc_matrix(idf.reshape(-1, 1))

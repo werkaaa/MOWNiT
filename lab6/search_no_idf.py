@@ -11,7 +11,7 @@ from sklearn.decomposition import TruncatedSVD
 import operator
 
 
-class SearchSVD:
+class SearchNoIDF:
 
     def __init__(self, files_number=50002, characters_per_file=-1):
         self.bag_of_words = set()
@@ -76,36 +76,32 @@ class SearchSVD:
                     values.append(file[word])
 
         self.term_by_document = csc_matrix((values, (words, files)))
-        nw_vector = np.array(self.nw_vector)
-        idf = np.log(np.array([self.files_number] * len(self.bag_of_words)) / nw_vector)
-        idf_sparse_matrix = csc_matrix(idf.reshape(-1, 1))
-        self.term_by_document = self.term_by_document.multiply(idf_sparse_matrix) #scalar multiplication
         self.term_by_document = normalize(self.term_by_document, norm='l2', axis=0, copy=False)
 
     def save(self):
-        save_npz(f'matrices{self.files_number}/normalized_term_by_document.npz', self.term_by_document)
-        with open(f'matrices{self.files_number}/svd_bag_of_words.txt', "wb") as fp:
+        save_npz(f'matrices{self.files_number}_noidf/normalized_term_by_document.npz', self.term_by_document)
+        with open(f'matrices{self.files_number}_noidf/svd_bag_of_words.txt', "wb") as fp:
             pickle.dump(self.bag_of_words, fp)
-        with open(f'matrices{self.files_number}/svd_texts.txt', "wb") as fp:
+        with open(f'matrices{self.files_number}_noidf/svd_texts.txt', "wb") as fp:
             pickle.dump(self.texts, fp)
 
     def save_svd(self):
-        with open(f'matrices{self.files_number}/svd_components.txt', "wb") as fp:
+        with open(f'matrices{self.files_number}_noidf/svd_components.txt', "wb") as fp:
             pickle.dump(self.svd_components, fp)
-        with open(f'matrices{self.files_number}/svd_term_space.txt', "wb") as fp:
+        with open(f'matrices{self.files_number}_noidf/svd_term_space.txt', "wb") as fp:
             pickle.dump(self.svd_term_space, fp)
 
     def load(self):
-        self.term_by_document = load_npz(f'matrices{self.files_number}/normalized_term_by_document.npz')
-        with open(f'matrices{self.files_number}/svd_bag_of_words.txt', "rb") as fp:
+        self.term_by_document = load_npz(f'matrices{self.files_number}_noidf/normalized_term_by_document.npz')
+        with open(f'matrices{self.files_number}_noidf/svd_bag_of_words.txt', "rb") as fp:
             self.bag_of_words = pickle.load(fp)
-        with open(f'matrices{self.files_number}/svd_texts.txt', "rb") as fp:
+        with open(f'matrices{self.files_number}_noidf/svd_texts.txt', "rb") as fp:
             self.texts = pickle.load(fp)
 
     def load_svd(self):
-        with open(f'matrices{self.files_number}/svd_term_space.txt', "rb") as fp:
+        with open(f'matrices{self.files_number}_noidf/svd_term_space.txt', "rb") as fp:
             self.svd_term_space = pickle.load(fp)
-        with open(f'matrices{self.files_number}/svd_components.txt', "rb") as fp:
+        with open(f'matrices{self.files_number}_noidf/svd_components.txt', "rb") as fp:
             self.svd_components = pickle.load(fp)
 
     def create_query_vector_transposed(self, query):
@@ -141,7 +137,7 @@ class SearchSVD:
         indices_corr.sort(key=operator.itemgetter(1), reverse=True)
         return indices_corr
 
-    def get_matrix_svd(self, n_components=200):
+    def get_matrix_svd(self, n_components=100):
         self.svd = TruncatedSVD(n_components=n_components)
         self.svd.fit(self.term_by_document)
         self.svd_term_space = self.svd.transform(self.term_by_document)
@@ -167,12 +163,9 @@ class SearchSVD:
 
 
 # if __name__ == '__main__':
-#     s = SearchSVD()
+#     s = SearchNoIDF()
 #     s.load_files()
 #     s.create_term_by_document_matrix()
 #     s.save()
 #     s.load()
-#     s.get_matrix_svd()
-#     s.save_svd()
-#     s.load_svd()
 #     print(s.search("4th month april", 3))
